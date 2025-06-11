@@ -9,17 +9,17 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/cheerio": "^0.22.35",
+    "cheerio": "^1.1.0",
     "next": "14.1.0",
     "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "cheerio": "^1.0.0-rc.12"
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
-    "@types/react": "^18.2.21",
     "@types/node": "^20.8.10",
+    "@types/react": "^18.2.21",
     "eslint": "8.56.0",
     "eslint-config-next": "14.1.0",
-    "@types/cheerio": "^0.22.30"
+    "typescript": "^5.3.3"
   }
-} 
+}

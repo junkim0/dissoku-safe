@@ -2,7 +2,7 @@ export const runtime = 'edge';
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { parse, HTMLElement } from 'node-html-parser';
+import * as cheerio from 'cheerio';
 
 export async function GET(req: NextRequest) {
   try {
@@ -32,20 +32,20 @@ export async function GET(req: NextRequest) {
 
     console.log('Received HTML length:', html.length);
 
-    const root = parse(html);
+    const $ = cheerio.load(html);
     const banned = [
       'エロ', 'えろ', 'エロイプ', 'オナニー', '見せ合い',
       'オフパコ', 'r18', '18歳以上', 'えち', 'nsfw', '性欲'
     ];
 
-    root.querySelectorAll('*').forEach((el: HTMLElement) => {
-      const text = el.text.trim().toLowerCase();
+    $('*').each((_, el) => {
+      const text = $(el).text().trim().toLowerCase();
       if (banned.some(k => text.includes(k))) {
-        el.remove();
+        $(el).remove();
       }
     });
 
-    const processedHtml = root.toString();
+    const processedHtml = $.html();
     console.log('Processed HTML length:', processedHtml.length);
 
     const res = new NextResponse(processedHtml);
