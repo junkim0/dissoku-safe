@@ -5,7 +5,7 @@ A free, open-source mirror of the public "Discord フレンド募集" board on h
 ## Features
 
 * Server-side proxy fetches the original HTML (up to the first 50 pages).
-* Applies a keyword blacklist (エロ, えち, R18, etc.) before streaming the page to visitors.
+* Applies a keyword blacklist before streaming the page to visitors.
 * Deployed for free on Vercel – edge-cached for 5 minutes to avoid stressing the upstream site.
 * Zero tracking, zero ads. 100 % client-side privacy.
 
@@ -27,6 +27,3 @@ npm run dev          # http://localhost:3000
 
 - [ ] UI pagination (page 1-50 selector)
 - [ ] Custom keyword list
-- [ ] Dark mode / light mode toggle
-
-PRs welcome! 😎
