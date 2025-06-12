@@ -67,8 +67,8 @@ export async function GET(req: NextRequest) {
       log('Warning: Could not find friend-user-cards container');
     }
 
-    // Extract necessary styles
-    const styles = $('style, link[rel="stylesheet"]');
+    // Extract necessary styles, but only <style> tags, not <link> tags
+    const styles = $('style');
     log(`Found ${styles.length} style elements`);
     
     // Extract only the main content we need
