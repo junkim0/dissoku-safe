@@ -1,21 +1,21 @@
 # Dissoku Safe
 
-A free, open-source mirror of the public "Discord フレンド募集" board on https://dissoku.net/ja/friend that automatically hides NSFW / 18+ listings.
+A free, open-source mirror of the public "Discord Friend Board" at https://dissoku.net/ja/friend. The proxy strips out any NSFW / 18+ listings so you can browse safely at work.
 
 ## Features
 
-* Server-side proxy fetches the original HTML (up to the first 50 pages).
-* Applies a keyword blacklist before streaming the page to visitors.
-* Deployed for free on Vercel – edge-cached for 5 minutes to avoid stressing the upstream site.
+* Server-side proxy (Edge Function) fetches the upstream HTML.
+* Extracts only the user cards whose links start with `/ja/friend/user/` (new CSS selector).
+* Applies a keyword blacklist before streaming the sanitised page to the visitor.
+* Deployed for free on Vercel – edge-cached for five minutes to avoid stressing the upstream site.
 * Zero tracking, zero ads. 100 % client-side privacy.
 
 ## Local development
 
 ```bash
 # from repo root
-cd dissoku-safe      # Next.js project lives here
-npm i                # install deps
-npm run dev          # http://localhost:3000
+npm install    # install dependencies
+npm run dev    # http://localhost:3000
 ```
 
 ## Deployment
@@ -26,4 +26,5 @@ npm run dev          # http://localhost:3000
 ## Roadmap
 
 - [ ] UI pagination (page 1-50 selector)
-- [ ] Custom keyword list
+- [ ] Customisable keyword list
+- [ ] Unit tests for the scraper
