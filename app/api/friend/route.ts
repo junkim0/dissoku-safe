@@ -1,5 +1,6 @@
 // Edge API route – returns a safe mirror of the latest "Discord Friend Board" profiles
 // Data source: public JSON endpoint – no HTML scraping to stay within Vercel Edge 1 MB limit.
+// Last attempt: 2024-07-16
 
 // @ts-expect-error Next types are injected by Vercel at runtime
 import { NextRequest, NextResponse } from 'next/server';
