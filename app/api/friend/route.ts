@@ -10,8 +10,12 @@ export async function GET(req: NextRequest) {
   const debugInfo: string[] = [];
   try {
     debugInfo.push('Starting to fetch data...');
-    const response = await fetch('https://dissoku.net/ja/friend', {
+    const response = await fetch('https://dissoku.net/ja/friend/users?page=1', {
       cache: 'no-store',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; DissokuSafe/1.0; +https://github.com/junkim0/dissoku-safe)',
+        'Accept-Language': 'ja,en;q=0.9'
+      }
     });
     debugInfo.push(`Response status: ${response.status}`);
     const html = await response.text();
