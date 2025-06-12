@@ -17,10 +17,11 @@ export default function Home() {
     addDebug('Starting to fetch data...');
     
     fetch('/api/friend')
-      .then((res) => {
+      .then(async (res) => {
         addDebug(`Response status: ${res.status}`);
         if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+          const errorData = await res.json();
+          throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
         }
         return res.text();
       })
@@ -28,12 +29,6 @@ export default function Home() {
         addDebug(`Received content length: ${txt.length}`);
         if (!txt) {
           throw new Error('No content received from API');
-        }
-        if (txt.includes('error')) {
-          const errorObj = JSON.parse(txt);
-          if (errorObj.error) {
-            throw new Error(errorObj.error);
-          }
         }
         setHtml(txt);
         setLoading(false);
