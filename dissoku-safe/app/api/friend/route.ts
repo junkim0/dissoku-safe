@@ -38,15 +38,43 @@ export async function GET(req: NextRequest) {
       'オフパコ', 'r18', '18歳以上', 'えち', 'nsfw', '性欲'
     ];
 
-    $('*').each((_, el) => {
-      const text = $(el).text().trim().toLowerCase();
-      if (banned.some(k => text.includes(k))) {
-        $(el).remove();
+    // Find all profile cards
+    const profileCards = $('.friend-user-card');
+    console.log('Found profile cards:', profileCards.length);
+
+    // Check each profile card for banned content
+    profileCards.each((_, card) => {
+      const cardText = $(card).text().trim().toLowerCase();
+      if (banned.some(keyword => cardText.includes(keyword))) {
+        $(card).remove();
+        console.log('Removed profile containing banned content');
       }
     });
 
-    const processedHtml = $.html();
+    // Get the container element that holds all profiles
+    const container = $('.friend-user-cards');
+    if (!container.length) {
+      console.log('Warning: Could not find friend-user-cards container');
+    }
+
+    // Extract necessary styles
+    const styles = $('style, link[rel="stylesheet"]').toString();
+    
+    // Extract only the main content we need
+    const mainContent = $('.friend-user-cards').toString();
+    const pagination = $('.pagination').toString();
+
+    // Combine the content
+    const processedHtml = `
+      ${styles}
+      <div class="friend-content">
+        ${mainContent}
+        ${pagination}
+      </div>
+    `;
+
     console.log('Processed HTML length:', processedHtml.length);
+    console.log('Remaining profile cards:', $('.friend-user-card').length);
 
     const res = new NextResponse(processedHtml);
     res.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate');
