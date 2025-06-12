@@ -1,89 +1,82 @@
-// @ts-expect-error Next.js provides its own type definitions at runtime
+// Edge API route - returns a safe mirror of the latest user cards on Dissoku
+// Data source: public JSON endpoint (no scraping needed)
+
+// @ts-expect-error Next provides these types at runtime
 import { NextRequest, NextResponse } from 'next/server';
-// @ts-expect-error Cheerio includes its own type definitions
-import * as cheerio from 'cheerio';
 
 export const runtime = 'edge';
 
-export async function GET(req: NextRequest) {
-  // Collect debug messages to render in the returned HTML
-  const debugInfo: string[] = [];
+interface DissokuProfile {
+  id: number;
+  username: string;
+  global_name?: string;
+  comment?: string;
+  avatar?: string; // URL path, not full URL
+}
+
+export async function GET(_req: NextRequest) {
+  const debug: string[] = [];
   try {
-    debugInfo.push('Starting to fetch data...');
-    const response = await fetch('https://dissoku.net/ja/friend/users?page=1', {
+    debug.push('Fetching JSON…');
+    const res = await fetch('https://dissoku.net/api/userprofiles/?ordering=-upped_at&page=1', {
       cache: 'no-store',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; DissokuSafe/1.0; +https://github.com/junkim0/dissoku-safe)',
-        'Accept-Language': 'ja,en;q=0.9'
-      }
-    });
-    debugInfo.push(`Response status: ${response.status}`);
-    const html = await response.text();
-    debugInfo.push(`Received content length: ${html.length}`);
-
-    const $ = cheerio.load(html);
-    const profileCards = $('a[href^="/ja/friend/user/"]');
-    debugInfo.push(`Profile cards found on page: ${profileCards.length}`);
-
-    const cardHtmls: string[] = [];
-    profileCards.each((i, el) => {
-      // Create a new Cheerio instance for each card to preserve the outer HTML
-      const cardCheerio = cheerio.load($.html(el), null, false);
-      cardHtmls.push(cardCheerio.html());
-    });
-
-    const combinedHtml = cardHtmls.join('');
-    const finalHtml = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Dissoku Safe Mirror</title>
-        <style>
-          body { font-family: sans-serif; }
-          .profile-card { border: 1px solid #ccc; padding: 10px; margin: 10px; border-radius: 5px; }
-        </style>
-      </head>
-      <body>
-        <h1>Dissoku Safe Mirror</h1>
-        <div>
-          <h2>Server-Side Debug Info:</h2>
-          <pre>${debugInfo.join('\n')}</pre>
-        </div>
-        <hr>
-        ${combinedHtml}
-      </body>
-      </html>
-    `;
-
-    return new NextResponse(finalHtml, {
-      headers: {
-        'Content-Type': 'text/html',
+        'User-Agent':
+          'Mozilla/5.0 (compatible; DissokuSafe/1.0; +https://github.com/junkim0/dissoku-safe)',
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
       },
     });
-  } catch (error: any) {
-    const errorHtml = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Error - Dissoku Safe Mirror</title>
-      </head>
-      <body>
-        <h1>An error occurred</h1>
-        <p>${error.message}</p>
-        <h2>Debug Info:</h2>
-        <pre>${debugInfo.join('\n')}</pre>
-      </body>
-      </html>
-    `;
-    return new NextResponse(errorHtml, {
-      status: 500,
-      headers: {
-        'Content-Type': 'text/html',
-      },
-    });
+    debug.push(`Upstream status: ${res.status}`);
+
+    if (!res.ok) throw new Error(`Upstream returned HTTP ${res.status}`);
+
+    const json = await res.json();
+    const results: DissokuProfile[] = json.results ?? [];
+    debug.push(`Profiles received: ${results.length}`);
+
+    // Build very simple HTML cards
+    const cardsHtml = results
+      .map((p) => {
+        const name = p.global_name || p.username || `User ${p.id}`;
+        const link = `https://dissoku.net/ja/friend/user/${p.id}`;
+        const avatarUrl = p.avatar ? `https://dissoku.net${p.avatar}` : undefined;
+        return `
+          <div class="profile-card">
+            ${avatarUrl ? `<img src="${avatarUrl}" alt="${name}" width="64" height="64">` : ''}
+            <h3><a href="${link}" target="_blank" rel="noopener noreferrer">${name}</a></h3>
+            ${p.comment ? `<p>${p.comment}</p>` : ''}
+          </div>`;
+      })
+      .join('\n');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dissoku Safe Mirror</title>
+  <style>
+    body{font-family:sans-serif;margin:20px;}
+    .profile-card{border:1px solid #ccc;padding:10px;border-radius:6px;margin-bottom:10px;max-width:500px;}
+    img{border-radius:4px;vertical-align:middle;margin-right:8px;}
+  </style>
+</head>
+<body>
+  <h1>Dissoku Safe Mirror</h1>
+  <h2>Server-Side Debug</h2>
+  <pre>${debug.join('\n')}</pre>
+  <hr>
+  ${cardsHtml}
+</body>
+</html>`;
+
+    return new NextResponse(html, { status: 200, headers: { 'Content-Type': 'text/html' } });
+  } catch (err: any) {
+    debug.push(`Error: ${err.message}`);
+    return new NextResponse(
+      `<pre>${debug.join('\n')}</pre>`,
+      { status: 500, headers: { 'Content-Type': 'text/plain' } },
+    );
   }
 } 
