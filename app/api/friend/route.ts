@@ -38,73 +38,58 @@ export async function GET(_req: NextRequest) {
   let removed = 0;
 
   try {
+    // Attempt to scrape HTML first. If Cloudflare returns a stub (no anchors), we fall back to JSON.
+    let safeCardCount = 0;
     for (let page = 1; page <= PAGES_TO_FETCH; page++) {
       const url = `https://dissoku.net/ja/friend/users?page=${page}`;
       debug.push(`Fetching page ${page}: ${url}`);
-
       const res = await fetch(url, {
-        cache: 'no-store',
         headers: {
-          'User-Agent':
-            'Mozilla/5.0 (compatible; DissokuSafe/1.0; +https://github.com/junkim0/dissoku-safe)',
-          // Brotli decompression is flaky in edge runtime; ask for gzip instead.
-          'Accept-Encoding': 'gzip, deflate',
-          'Accept-Language': 'ja,en;q=0.9',
-          Accept: 'text/html',
-          Referer: 'https://dissoku.net/ja/friend',
+          "User-Agent": "Mozilla/5.0 (compatible; DissokuSafe/1.0; +https://github.com/junkim0/dissoku-safe)",
+          "Accept-Language": "ja,en;q=0.9",
+          "Accept-Encoding": "gzip, deflate",
+          Referer: "https://dissoku.net/ja/friend",
         },
+        cache: "no-store",
       });
-
-      debug.push(`Status: ${res.status}`);
-      if (!res.ok) {
-        debug.push(`▲ Skipped page due to HTTP ${res.status}`);
-        continue;
-      }
+      debug.push(`Page ${page} status: ${res.status}`);
+      if (!res.ok) continue;
       const html = await res.text();
-      debug.push(`Received – length ${html.length}`);
+      if (page === 1) debug.push(`Initial HTML length received: ${html.length} characters`);
 
       const $ = cheerio.load(html);
-
-      // Each card is an <a> that links to /ja/friend/user/<id>
       const anchors = $('a[href^="/ja/friend/user/"]');
-      debug.push(`Anchors found on page ${page}: ${anchors.length}`);
+      debug.push(`Profile anchors found on page ${page}: ${anchors.length}`);
+      anchors.each((_, a) => extractCard($, a as cheerio.Element));
+      safeCardCount += anchors.length;
+    }
 
-      anchors.each((_i, el) => {
-        const anchor = $(el);
-        const linkPath = anchor.attr('href');
-        if (!linkPath) return;
-
-        const link = `https://dissoku.net${linkPath}`;
-        // Prevent duplicates when the same card appears on page 1 & 2
-        if (safeCards.some((c) => c.link === link)) return;
-
-        // Username is usually in a child element that contains no whitespace
-        const nameText = anchor.find('h2, h3, div, span').first().text().trim() || anchor.text().trim();
-
-        // Intro paragraph appears as plain text somewhere inside the anchor – grab first <p>
-        const intro = anchor.find('p').first().text().trim();
-
-        // Tags are small <span> elements inside the card
-        const tags: string[] = [];
-        anchor.find('span').each((_j, tagEl) => {
-          const t = $(tagEl).text().trim();
-          if (t) tags.push(t);
-        });
-
-        // Determine gender by background color classes (approximate)
-        const bgClass = anchor.attr('class') ?? '';
-        let gender: SafeCard['gender'] = 'unspecified';
-        if (bgClass.includes('bg-pink') || bgClass.includes('bg-red')) gender = 'female';
-        else if (bgClass.includes('bg-blue')) gender = 'male';
-
-        const haystack = `${nameText} ${intro} ${tags.join(' ')}`.toLowerCase();
-        if (BANNED_KEYWORDS.some((kw) => haystack.includes(kw))) {
-          removed++;
-          return; // skip NSFW card
-        }
-
-        safeCards.push({ name: nameText, intro, link, tags, gender });
+    // Fallback: use public JSON API if no anchors were found
+    if (safeCardCount === 0) {
+      debug.push("No anchors found – falling back to JSON endpoint");
+      const apiUrl = "https://app.dissoku.net/api/userprofiles/?lang=ja&ordering=-upped_at&page=1";
+      const res = await fetch(apiUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; DissokuSafe/1.0; +https://github.com/junkim0/dissoku-safe)",
+          Accept: "application/json",
+        },
+        cache: "no-store",
       });
+      debug.push(`JSON API status: ${res.status}`);
+      if (res.ok) {
+        const json = (await res.json()) as { results?: any[] };
+        const profiles = json.results || [];
+        debug.push(`Profiles received from JSON: ${profiles.length}`);
+        profiles.forEach((p) => {
+          safeCards.push({
+            name: escapeHtml(p.username || p.global_name || "User"),
+            intro: escapeHtml(p.comment || ""),
+            link: "",
+            tags: [],
+            gender: 'unspecified',
+          });
+        });
+      }
     }
 
     debug.push(`Total safe cards collected: ${safeCards.length}`);
