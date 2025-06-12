@@ -61,51 +61,21 @@ export async function GET(req: NextRequest) {
     });
     log(`Removed ${removedCount} profiles containing banned content`);
 
-    // Get the container element that holds all profiles
-    const container = $('.friend-user-cards');
-    if (!container.length) {
-      log('Warning: Could not find friend-user-cards container');
-    }
+    const remainingCards = $('.friend-user-card').length;
+    log(`Remaining profile cards: ${remainingCards}`);
 
-    // Extract necessary styles, but only <style> tags, not <link> tags
-    const styles = $('style');
-    log(`Found ${styles.length} style elements`);
-    
-    // Extract only the main content we need
-    const mainContent = $('.friend-user-cards');
-    const pagination = $('.pagination');
-    
-    log(`Main content length: ${mainContent.html()?.length || 0}`);
-    log(`Pagination content length: ${pagination.html()?.length || 0}`);
-
-    // Combine the content with necessary structure
+    // Create a simple debug message instead of the full HTML
     const processedHtml = `
-      <div class="dissoku-mirror-content">
-        <style>
-          .dissoku-mirror-content {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-          }
-          .friend-user-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1rem;
-            padding: 1rem;
-          }
-          .friend-user-card {
-            background: white;
-            border-radius: 8px;
-            padding: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          }
-        </style>
-        ${styles.toString()}
-        ${mainContent.toString()}
-        ${pagination.toString()}
+      <div>
+        <h2>Server-Side Debug Info:</h2>
+        <p>Status of fetch from dissoku.net: ${response.status}</p>
+        <p>Initial HTML length received: ${html.length} characters</p>
+        <p>Profile cards found on page: ${profileCards.length}</p>
+        <p>Profile cards removed: ${removedCount}</p>
+        <p>Profile cards remaining: ${remainingCards}</p>
       </div>
     `;
-
+    
     log(`Final processed HTML length: ${processedHtml.length}`);
 
     const res = new NextResponse(processedHtml);
