@@ -6,26 +6,43 @@ export default function Home() {
   const [html, setHtml] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [debug, setDebug] = useState<string[]>([]);
+
+  const addDebug = (msg: string) => {
+    console.log(msg);
+    setDebug(prev => [...prev, msg]);
+  };
 
   useEffect(() => {
+    addDebug('Starting to fetch data...');
+    
     fetch('/api/friend')
       .then((res) => {
+        addDebug(`Response status: ${res.status}`);
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         return res.text();
       })
       .then((txt) => {
+        addDebug(`Received content length: ${txt.length}`);
         if (!txt) {
           throw new Error('No content received from API');
         }
-        console.log('Received content length:', txt.length);
+        if (txt.includes('error')) {
+          const errorObj = JSON.parse(txt);
+          if (errorObj.error) {
+            throw new Error(errorObj.error);
+          }
+        }
         setHtml(txt);
         setLoading(false);
       })
       .catch((err) => {
+        const errorMsg = err.message || 'Unknown error occurred';
+        addDebug(`Error occurred: ${errorMsg}`);
         console.error('Error fetching data:', err);
-        setError(err.message);
+        setError(errorMsg);
         setLoading(false);
       });
   }, []);
@@ -54,6 +71,22 @@ export default function Home() {
           dangerouslySetInnerHTML={{ __html: html }} 
         />
       )}
+      {/* Debug information */}
+      <div style={{
+        marginTop: '2rem',
+        padding: '1rem',
+        background: '#eee',
+        borderRadius: '4px',
+        fontSize: '0.9rem',
+        fontFamily: 'monospace'
+      }}>
+        <h2 style={{marginBottom: '1rem'}}>Debug Info:</h2>
+        {debug.map((msg, i) => (
+          <div key={i} style={{marginBottom: '0.5rem'}}>
+            {msg}
+          </div>
+        ))}
+      </div>
     </main>
   );
 } 
