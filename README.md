@@ -5,7 +5,8 @@ A free, open-source mirror of the public "Discord Friend Board" at https://disso
 ## Features
 
 * Server-side proxy (Edge Function) fetches the upstream HTML.
-* Uses the public JSON endpoint (`/api/userprofiles/`) instead of scraping HTML, eliminating Cloudflare challenges.
+* Scrapes the paginated board HTML (`/ja/friend/users?page=N`) directly – no login required.
+* Requests gzip (not brotli) to avoid decompression issues on the Edge runtime.
 * Applies a keyword blacklist before streaming the sanitised page to the visitor.
 * Deployed for free on Vercel – edge-cached for five minutes to avoid stressing the upstream site.
 * Zero tracking, zero ads. 100 % client-side privacy.
