@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const debugInfo: string[] = [];
   try {
     debugInfo.push('Starting to fetch data...');
-    const response = await fetch('https://dissoku.net/ja/accounts/friend', {
+    const response = await fetch('https://dissoku.net/ja/friend', {
       cache: 'no-store',
     });
     debugInfo.push(`Response status: ${response.status}`);
