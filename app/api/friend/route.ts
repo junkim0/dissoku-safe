@@ -17,7 +17,7 @@ interface DissokuProfile {
 export async function GET(_req: NextRequest) {
   const debug: string[] = [];
   try {
-    debug.push('Fetching JSON…');
+    debug.push('Fetching JSON via userprofiles API…');
     const res = await fetch('https://dissoku.net/api/userprofiles/?ordering=-upped_at&page=1', {
       cache: 'no-store',
       headers: {
@@ -71,7 +71,13 @@ export async function GET(_req: NextRequest) {
 </body>
 </html>`;
 
-    return new NextResponse(html, { status: 200, headers: { 'Content-Type': 'text/html' } });
+    return new NextResponse(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-store',
+      },
+    });
   } catch (err: any) {
     debug.push(`Error: ${err.message}`);
     return new NextResponse(
